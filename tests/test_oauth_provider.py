@@ -33,6 +33,7 @@ def test_callback_consent_tokens_and_revocation():
         state=parse_qs(urlsplit(login.headers['location']).query)['state'][0]
         response=browser.get('/oauth/google/callback',params={'state':state,'code':'google-code'})
         assert response.status_code==200
+        assert response.headers['referrer-policy']=='strict-origin'
         assert 'private-google-token' not in response.text
         import re
         flow=re.search('name="flow" value="([^"]+)"',response.text).group(1)
@@ -217,3 +218,16 @@ def test_legacy_public_client_cannot_be_loaded():
         await provider.store.put(key('client',client.client_id),client.model_dump(mode='json'))
         assert await provider.get_client(client.client_id) is None
     asyncio.run(run())
+
+
+@pytest.mark.parametrize('origin', ['null', 'https://attacker.example', None])
+def test_consent_rejects_opaque_and_missing_origin_without_sensitive_logs(origin, caplog):
+    provider,_,_=setup()
+    with TestClient(Starlette(routes=provider.routes()),base_url=BASE) as browser:
+        headers={'Origin':origin} if origin is not None else {}
+        response=browser.post('/oauth/consent',data={'flow':'sensitive-flow'},headers=headers)
+        assert response.status_code==400
+        assert 'consent_origin_invalid' in response.text
+    assert 'consent_origin_invalid' in caplog.text
+    assert 'sensitive-flow' not in caplog.text
+    assert 'attacker.example' not in caplog.text

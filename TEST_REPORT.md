@@ -60,3 +60,11 @@ OAuth 配置和令牌仅保存在本机并被 Git 忽略，令牌文件权限为
 新增独立 Hanluwork OAuth issuer、Google Web OAuth 用户绑定、Firestore 加密存储和每用户 Gmail 读取。全套 pytest：102 passed、8 subtests passed；只有现有 Starlette TestClient 弃用提示。覆盖未授权401、scope不足403、错误resource、用户隔离、PKCE、授权码重放/并发兑换、Google nonce/issuer/email验证、confidential client限制、刷新scope、撤销与并发、凭据条件更新和错误脱敏。
 
 MCP Inspector 2.13.0 对更新后本地 8001 端口执行 tools/list 成功，工具声明为 authorized email data，参数和只读注解正确。尚未完成此次版本的云端真实 Gmail 授权与 Gemini 调用；不会用 mock 测试替代。
+
+### 云端部署进展
+
+- 提交 `83ee389aa3e392e544207c13fbb7fa34c26fc02b` 已推送 developer；Cloud Build `c17453f8-76e3-4239-a28e-e6bd6abddc69` 成功。
+- Cloud Run revision `hanluwork-00005-b64` 承接 100% 流量，`/health` 返回 mode=gmail。
+- OAuth authorization-server 与 protected-resource discovery 均返回 200；匿名 `/mcp` 请求返回 401 并提供 discovery 地址。
+- 已创建 Hanluwork Cloud Gmail Web 客户端、专用 Firestore 数据库 hanluwork、运行账号 hanluwork-runtime 和两项 Secret Manager 密钥。数据库与密钥访问范围经用户确认。
+- Gemini 仍保留原来的免认证应用配置，正在处理旧连接替换；尚未完成 Gemini 真实 Gmail 授权和邮件读取验收。

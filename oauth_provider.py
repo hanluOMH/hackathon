@@ -3,6 +3,7 @@ import asyncio
 import base64
 import hashlib
 import html
+import logging
 import secrets
 import time
 from datetime import datetime, timezone, timedelta
@@ -94,8 +95,10 @@ class HanluOAuthProvider:
         return [Route('/oauth/login', self.login), Route('/oauth/google/callback', self.callback), Route('/oauth/consent', self.consent, methods=['POST'])]
 
     @staticmethod
-    def failure():
-        return HTMLResponse('Authorization could not be completed. Restart the connection from Gemini.', status_code=400, headers={'Cache-Control':'no-store'})
+    def failure(reason='authorization_failed'):
+        # Only developer-defined reason codes are logged, never request details.
+        logging.getLogger(__name__).warning('OAuth authorization failed: %s', reason)
+        return HTMLResponse('Authorization could not be completed. Restart the connection from Gemini. Reason: ' + reason, status_code=400, headers={'Cache-Control':'no-store'})
 
     async def login(self, request):
         pending = await self.store.consume(key('pending', request.query_params.get('flow','')))
@@ -163,19 +166,23 @@ class HanluOAuthProvider:
             '<form method="post" action="/oauth/consent"><input type="hidden" name="flow" value="'+consent_id+'">'
             '<button name="decision" value="allow">Allow read-only access</button> '
             '<button name="decision" value="deny">Cancel</button></form></body></html>',
-            headers={'Cache-Control':'no-store','Referrer-Policy':'no-referrer','Content-Security-Policy':"default-src 'none'; form-action 'self'; frame-ancestors 'none'"})
+            headers={'Cache-Control':'no-store','Referrer-Policy':'strict-origin','Content-Security-Policy':"default-src 'none'; form-action 'self'; frame-ancestors 'none'"})
 
     async def consent(self, request):
         if request.headers.get('origin') != self.base_url:
-            return self.failure()
+            return self.failure('consent_origin_invalid')
         form = await request.form()
         consent_id = str(form.get('flow',''))
         pending = await self.store.get(key('consent',consent_id))
-        if not pending or pending['expires_at'] < time.time() or not secrets.compare_digest(pending['cookie_hash'],digest(request.cookies.get(COOKIE,''))):
-            return self.failure()
+        if not pending:
+            return self.failure('consent_not_found')
+        if pending['expires_at'] < time.time():
+            return self.failure('consent_expired')
+        if not secrets.compare_digest(pending['cookie_hash'],digest(request.cookies.get(COOKIE,''))):
+            return self.failure('consent_cookie_invalid')
         pending = await self.store.consume(key('consent',consent_id))
         if not pending:
-            return self.failure()
+            return self.failure('consent_already_used')
         params = pending['params']
         query = {'state':params['state']} if params.get('state') else {}
         if form.get('decision') != 'allow':
