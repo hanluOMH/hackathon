@@ -2,7 +2,7 @@ FROM python:3.12-slim
 WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
-COPY server.py mail_provider.py ./
+COPY server.py mail_provider.py gmail_client.py cloud_gmail.py oauth_provider.py oauth_store.py ./
 COPY fixtures/ ./fixtures/
 RUN useradd --create-home appuser
 USER appuser
