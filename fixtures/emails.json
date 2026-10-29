@@ -1,0 +1,6 @@
+[
+  {"id":"demo-001","subject":"Hanluwork prototype review","sender":"Alex <alex@example.test>","sent_at":"2026-10-28T09:00:00-07:00","text":"Please share the MCP prototype and test results by Friday. We need to review the authorization flow before real Gmail access.","source_url":null},
+  {"id":"demo-002","subject":"Dinner on Saturday","sender":"Jamie <jamie@example.test>","sent_at":"2026-10-27T18:30:00-07:00","text":"Would you like to join dinner this Saturday? Please let me know by Thursday.","source_url":null},
+  {"id":"demo-003","subject":"Developer newsletter","sender":"Updates <news@example.test>","sent_at":"2026-10-26T08:00:00-07:00","text":"This week's issue discusses agent tools and software testing. This is a synthetic newsletter.","source_url":null},
+  {"id":"demo-004","subject":"Older prototype note","sender":"Alex <alex@example.test>","sent_at":"2026-10-10T10:00:00-07:00","text":"An older message to verify date filtering.","source_url":null}
+]
